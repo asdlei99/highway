@@ -163,6 +163,7 @@ cc_library(
     compatible_with = [],
     copts = COPTS,
     defines = DEFINES,
+    includes = ["."],
     local_defines = ["hwy_EXPORTS"],
     textual_hdrs = [
         # These are textual because config macros influence them:
