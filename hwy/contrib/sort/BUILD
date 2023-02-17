@@ -11,6 +11,17 @@ COMPAT = [
     "//buildenv/target:non_prod",  # includes mobile/vendor.
 ]
 
+cc_library(
+    name = "intel",
+    hdrs = [
+        "avx512-16bit-qsort.hpp",
+        "avx512-32bit-qsort.hpp",
+        "avx512-64bit-qsort.hpp",
+        "avx512-common-qsort.h",
+    ],
+    compatible_with = [],
+)
+
 # cc_library(
 #     name = "vxsort",
 #     srcs = [
@@ -109,6 +120,7 @@ cc_library(
     deps = [
         # Only if VQSORT_SECURE_RNG is set.
         # "//third_party/absl/random",
+        ":intel",  # required if HAVE_INTEL
         "//:hwy",
         # ":vxsort",  # required if HAVE_VXSORT
     ],

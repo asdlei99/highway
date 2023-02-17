@@ -207,6 +207,7 @@ std::vector<Algo> AlgoForBench() {
 #endif
 
         Algo::kVQSort,  // only ~4x slower, but not required for Table 1a
+        Algo::kIntel,
 #endif
   };
 }
@@ -273,18 +274,20 @@ HWY_NOINLINE void BenchAllSort() {
         1 * M,
 #endif
        }) {
-    BenchSort<TraitsLane<OrderAscending<float>>>(num_keys);
+    // NOTE: if HAVE_INTEL, OrderDescending is not supported.
+
+    // BenchSort<TraitsLane<OrderAscending<float>>>(num_keys);
     // BenchSort<TraitsLane<OrderDescending<double>>>(num_keys);
     // BenchSort<TraitsLane<OrderAscending<int16_t>>>(num_keys);
-    BenchSort<TraitsLane<OrderDescending<int32_t>>>(num_keys);
+    BenchSort<TraitsLane<OrderAscending<int32_t>>>(num_keys);
     BenchSort<TraitsLane<OrderAscending<int64_t>>>(num_keys);
     // BenchSort<TraitsLane<OrderDescending<uint16_t>>>(num_keys);
     // BenchSort<TraitsLane<OrderDescending<uint32_t>>>(num_keys);
     // BenchSort<TraitsLane<OrderAscending<uint64_t>>>(num_keys);
 
 #if !HAVE_VXSORT && VQSORT_ENABLED
-    BenchSort<Traits128<OrderAscending128>>(num_keys);
-    BenchSort<Traits128<OrderAscendingKV128>>(num_keys);
+    // BenchSort<Traits128<OrderAscending128>>(num_keys);
+    // BenchSort<Traits128<OrderAscendingKV128>>(num_keys);
 #endif
   }
 }
@@ -301,8 +304,8 @@ namespace hwy {
 int64_t first_sort_target = 0;  // none run yet
 namespace {
 HWY_BEFORE_TEST(BenchSort);
-HWY_EXPORT_AND_TEST_P(BenchSort, BenchAllPartition);
-HWY_EXPORT_AND_TEST_P(BenchSort, BenchAllBase);
+// HWY_EXPORT_AND_TEST_P(BenchSort, BenchAllPartition);
+// HWY_EXPORT_AND_TEST_P(BenchSort, BenchAllBase);
 HWY_EXPORT_AND_TEST_P(BenchSort, BenchAllSort);
 }  // namespace
 }  // namespace hwy
