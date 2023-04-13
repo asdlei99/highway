@@ -2603,10 +2603,23 @@ HWY_API VFromD<D> Reverse(D d, const VFromD<D> v) {
 
 // ------------------------------ Reverse2
 
+// Per-target flag to prevent generic_ops-inl.h defining 8-bit Reverse2/4/8.
+#ifdef HWY_NATIVE_REVERSE2_8
+#undef HWY_NATIVE_REVERSE2_8
+#else
+#define HWY_NATIVE_REVERSE2_8
+#endif
+
+template <class D, HWY_IF_T_SIZE_D(D, 1)>
+HWY_API VFromD<D> Reverse2(D d, const VFromD<D> v) {
+  const RepartitionToWide<RebindToUnsigned<decltype(d)>> dw;
+  return BitCast(d, RotateRight<8>(BitCast(dw, v)));
+}
+
 template <class D, HWY_IF_T_SIZE_D(D, 2)>
 HWY_API VFromD<D> Reverse2(D d, const VFromD<D> v) {
-  const RepartitionToWide<RebindToUnsigned<decltype(d)>> du32;
-  return BitCast(d, RotateRight<16>(BitCast(du32, v)));
+  const RepartitionToWide<RebindToUnsigned<decltype(d)>> dw;
+  return BitCast(d, RotateRight<16>(BitCast(dw, v)));
 }
 
 template <class D, HWY_IF_T_SIZE_D(D, 4)>
@@ -2620,6 +2633,12 @@ HWY_API VFromD<D> Reverse2(D /* tag */, const VFromD<D> v) {
 }
 
 // ------------------------------ Reverse4
+
+template <class D, HWY_IF_T_SIZE_D(D, 1)>
+HWY_API VFromD<D> Reverse4(D /* tag */, const VFromD<D> v) {
+  return VFromD<D>{wasm_i8x16_shuffle(v.raw, v.raw, 3, 2, 1, 0, 7, 6, 5, 4, 11,
+                                      10, 9, 8, 15, 14, 13, 12)};
+}
 
 template <class D, HWY_IF_T_SIZE_D(D, 2)>
 HWY_API VFromD<D> Reverse4(D /* tag */, const VFromD<D> v) {
@@ -2638,14 +2657,20 @@ HWY_API VFromD<D> Reverse4(D /* tag */, const VFromD<D>) {
 
 // ------------------------------ Reverse8
 
+template <class D, HWY_IF_T_SIZE_D(D, 1)>
+HWY_API VFromD<D> Reverse8(D /* tag */, const VFromD<D> v) {
+  return VFromD<D>{wasm_i8x16_shuffle(v.raw, v.raw, 7, 6, 5, 4, 3, 2, 1, 0, 15,
+                                      14, 13, 12, 11, 10, 9, 8)};
+}
+
 template <class D, HWY_IF_T_SIZE_D(D, 2)>
 HWY_API VFromD<D> Reverse8(D d, const VFromD<D> v) {
   return Reverse(d, v);
 }
 
-template <class D, HWY_IF_NOT_T_SIZE_D(D, 2)>
+template <class D, HWY_IF_T_SIZE_ONE_OF_D(D, (1 << 4) | (1 << 8))>
 HWY_API VFromD<D> Reverse8(D /* tag */, const VFromD<D>) {
-  HWY_ASSERT(0);  // don't have 8 lanes unless 16-bit
+  HWY_ASSERT(0);  // don't have 8 lanes for > 16-bit lanes
 }
 
 // ------------------------------ InterleaveLower

@@ -1345,16 +1345,13 @@ instead because they are more general:
 
 The following `ReverseN` must not be called if `Lanes(D()) < N`:
 
-*   `V`: `{u,i,f}{16,32,64}` \
-    <code>V **Reverse2**(D, V a)</code> returns a vector with each group of 2
+*   <code>V **Reverse2**(D, V a)</code> returns a vector with each group of 2
     contiguous lanes in reversed order (`out[i] == a[i ^ 1]`).
 
-*   `V`: `{u,i,f}{16,32,64}` \
-    <code>V **Reverse4**(D, V a)</code> returns a vector with each group of 4
+*   <code>V **Reverse4**(D, V a)</code> returns a vector with each group of 4
     contiguous lanes in reversed order (`out[i] == a[i ^ 3]`).
 
-*   `V`: `{u,i,f}{16,32,64}` \
-    <code>V **Reverse8**(D, V a)</code> returns a vector with each group of 8
+*   <code>V **Reverse8**(D, V a)</code> returns a vector with each group of 8
     contiguous lanes in reversed order (`out[i] == a[i ^ 7]`).
 
 All other ops in this section are only available if `HWY_TARGET != HWY_SCALAR`:

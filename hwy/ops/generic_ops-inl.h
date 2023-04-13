@@ -2693,6 +2693,60 @@ HWY_API VFromD<D> LoadExpand(MFromD<D> mask, D d,
 
 #endif  // HWY_NATIVE_EXPAND
 
+// ------------------------------ Reverse2, Reverse4, Reverse8 (8-bit)
+
+#if (defined(HWY_NATIVE_REVERSE2_8) == defined(HWY_TARGET_TOGGLE))
+#ifdef HWY_NATIVE_REVERSE2_8
+#undef HWY_NATIVE_REVERSE2_8
+#else
+#define HWY_NATIVE_REVERSE2_8
+#endif
+
+template <class D, HWY_IF_T_SIZE_D(D, 1)>
+HWY_API VFromD<D> Reverse2(D d, VFromD<D> v) {
+#if HWY_TARGET == HWY_SSE2
+  // TableLookupBytes is inefficient: shift instead.
+  const Repartition<uint16_t, decltype(d)> du16;
+  const VFromD<decltype(du16)> vu16 = BitCast(du16, v);
+  return BitCast(d, Or(ShiftLeft<8>(vu16), ShiftRight<8>(vu16)));
+#else
+  // AVX3 does not offer a 16-bit rotate right.
+  alignas(16) static constexpr TFromD<D> kShuffle[16] = {
+      1, 0, 3, 2, 5, 4, 7, 6, 9, 8, 11, 10, 13, 12, 15, 14};
+  return TableLookupBytes(v, LoadDup128(d, kShuffle));
+#endif
+}
+
+template <class D, HWY_IF_T_SIZE_D(D, 1)>
+HWY_API VFromD<D> Reverse4(D d, VFromD<D> v) {
+#if HWY_TARGET == HWY_SSE2
+  // TableLookupBytes is inefficient: shift instead.
+  const Repartition<uint16_t, decltype(d)> du16;
+  return BitCast(d, Reverse2(du16, BitCast(du16, Reverse2(d, v))));
+#else
+  alignas(16) static constexpr uint8_t kShuffle[16] = {
+      3, 2, 1, 0, 7, 6, 5, 4, 11, 10, 9, 8, 15, 14, 13, 12};
+  const Repartition<uint8_t, decltype(d)> du8;
+  return TableLookupBytes(v, BitCast(d, LoadDup128(du8, kShuffle)));
+#endif
+}
+
+template <class D, HWY_IF_T_SIZE_D(D, 1)>
+HWY_API VFromD<D> Reverse8(D d, VFromD<D> v) {
+#if HWY_TARGET == HWY_SSE2
+  // TableLookupBytes is inefficient: shift instead.
+  const Repartition<uint32_t, D> du32;
+  return BitCast(d, Reverse2(du32, BitCast(du32, Reverse4(d, v))));
+#else
+  alignas(16) static constexpr uint8_t kShuffle[16] = {
+      7, 6, 5, 4, 3, 2, 1, 0, 15, 14, 13, 12, 11, 10, 9, 8};
+  const Repartition<uint8_t, decltype(d)> du8;
+  return TableLookupBytes(v, BitCast(d, LoadDup128(du8, kShuffle)));
+#endif
+}
+
+#endif  // HWY_NATIVE_REVERSE2_8
+
 // ------------------------------ ReverseLaneBytes
 
 #if (defined(HWY_NATIVE_REVERSE_LANE_BYTES) == defined(HWY_TARGET_TOGGLE))
@@ -2702,31 +2756,25 @@ HWY_API VFromD<D> LoadExpand(MFromD<D> mask, D d,
 #define HWY_NATIVE_REVERSE_LANE_BYTES
 #endif
 
-template <class V, HWY_IF_T_SIZE_V(V, 2), HWY_IF_NOT_FLOAT_NOR_SPECIAL_V(V)>
+template <class V, HWY_IF_T_SIZE_V(V, 2)>
 HWY_API V ReverseLaneBytes(V v) {
-  alignas(16) static constexpr uint8_t kShuffle[16] = {
-      1, 0, 3, 2, 5, 4, 7, 6, 9, 8, 11, 10, 13, 12, 15, 14};
-  const DFromV<decltype(v)> d;
+  const DFromV<V> d;
   const Repartition<uint8_t, decltype(d)> du8;
-  return TableLookupBytes(v, BitCast(d, LoadDup128(du8, kShuffle)));
+  return BitCast(d, Reverse2(du8, BitCast(du8, v)));
 }
 
-template <class V, HWY_IF_T_SIZE_V(V, 4), HWY_IF_NOT_FLOAT_NOR_SPECIAL_V(V)>
+template <class V, HWY_IF_T_SIZE_V(V, 4)>
 HWY_API V ReverseLaneBytes(V v) {
-  alignas(16) static constexpr uint8_t kShuffle[16] = {
-      3, 2, 1, 0, 7, 6, 5, 4, 11, 10, 9, 8, 15, 14, 13, 12};
-  const DFromV<decltype(v)> d;
+  const DFromV<V> d;
   const Repartition<uint8_t, decltype(d)> du8;
-  return TableLookupBytes(v, BitCast(d, LoadDup128(du8, kShuffle)));
+  return BitCast(d, Reverse4(du8, BitCast(du8, v)));
 }
 
-template <class V, HWY_IF_T_SIZE_V(V, 8), HWY_IF_NOT_FLOAT_NOR_SPECIAL_V(V)>
+template <class V, HWY_IF_T_SIZE_V(V, 8)>
 HWY_API V ReverseLaneBytes(V v) {
-  alignas(16) static constexpr uint8_t kShuffle[16] = {
-      7, 6, 5, 4, 3, 2, 1, 0, 15, 14, 13, 12, 11, 10, 9, 8};
-  const DFromV<decltype(v)> d;
+  const DFromV<V> d;
   const Repartition<uint8_t, decltype(d)> du8;
-  return TableLookupBytes(v, BitCast(d, LoadDup128(du8, kShuffle)));
+  return BitCast(d, Reverse8(du8, BitCast(du8, v)));
 }
 
 #endif  // HWY_NATIVE_REVERSE_LANE_BYTES

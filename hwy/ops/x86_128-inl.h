@@ -4485,26 +4485,12 @@ HWY_API VFromD<D> Reverse(D d, const VFromD<D> v) {
 #endif
 }
 
-// ------------------------------ Reverse2 (for all vector sizes)
+// ------------------------------ Reverse2
 
 // Single lane: no change
 template <class D, typename T = TFromD<D>, HWY_IF_LANES_D(D, 1)>
 HWY_API Vec128<T, 1> Reverse2(D /* tag */, Vec128<T, 1> v) {
   return v;
-}
-
-template <class D, typename T = TFromD<D>, HWY_IF_T_SIZE(T, 1)>
-HWY_API VFromD<D> Reverse2(D d, VFromD<D> v) {
-#if HWY_TARGET == HWY_SSE2
-  const Repartition<uint16_t, decltype(d)> du16;
-  const auto vu16 = BitCast(du16, v);
-  return BitCast(d, Or(ShiftLeft<8>(vu16), ShiftRight<8>(vu16)));
-#else
-  // There is no 16-bit rotate right.
-  alignas(16) static constexpr T kShuffle[16] = {1, 0, 3,  2,  5,  4,  7,  6,
-                                                 9, 8, 11, 10, 13, 12, 15, 14};
-  return TableLookupBytes(v, LoadDup128(d, kShuffle));
-#endif
 }
 
 template <class D, typename T = TFromD<D>, HWY_IF_T_SIZE(T, 2)>
@@ -4585,44 +4571,11 @@ HWY_API VFromD<D> Reverse8(D d, const VFromD<D> v) {
 #endif
 }
 
-template <class D, HWY_IF_V_SIZE_LE_D(D, 16), HWY_IF_NOT_T_SIZE_D(D, 2)>
+template <class D, HWY_IF_V_SIZE_LE_D(D, 16),
+          HWY_IF_T_SIZE_ONE_OF_D(D, (1 << 4) | (1 << 8))>
 HWY_API VFromD<D> Reverse8(D /* tag */, VFromD<D> /* v */) {
-  HWY_ASSERT(0);  // don't have 8 lanes unless 16-bit
+  HWY_ASSERT(0);  // don't have 8 lanes if larger than 16-bit
 }
-
-// ------------------------------ ReverseLaneBytes
-
-#if HWY_TARGET == HWY_SSE2
-
-#ifdef HWY_NATIVE_REVERSE_LANE_BYTES
-#undef HWY_NATIVE_REVERSE_LANE_BYTES
-#else
-#define HWY_NATIVE_REVERSE_LANE_BYTES
-#endif
-
-template <class V, HWY_IF_T_SIZE_V(V, 2)>
-HWY_API V ReverseLaneBytes(V v) {
-  const DFromV<decltype(v)> d;
-  const RebindToUnsigned<decltype(d)> du;
-  const auto vu = BitCast(du, v);
-  return BitCast(d, Or(ShiftLeft<8>(vu), ShiftRight<8>(vu)));
-}
-
-template <class V, HWY_IF_T_SIZE_V(V, 4)>
-HWY_API V ReverseLaneBytes(V v) {
-  const DFromV<decltype(v)> d;
-  const Repartition<uint16_t, decltype(d)> du16;
-  return BitCast(d, Reverse2(du16, ReverseLaneBytes(BitCast(du16, v))));
-}
-
-template <class V, HWY_IF_T_SIZE_V(V, 8)>
-HWY_API V ReverseLaneBytes(V v) {
-  const DFromV<decltype(v)> d;
-  const Repartition<uint16_t, decltype(d)> du16;
-  return BitCast(d, Reverse4(du16, ReverseLaneBytes(BitCast(du16, v))));
-}
-
-#endif  // HWY_TARGET == HWY_SSE2
 
 // ------------------------------ ReverseBits
 

@@ -1443,6 +1443,13 @@ HWY_API Vec1<T> Reverse(D /* tag */, const Vec1<T> v) {
   return v;
 }
 
+// Per-target flag to prevent generic_ops-inl.h defining 8-bit Reverse2/4/8.
+#ifdef HWY_NATIVE_REVERSE2_8
+#undef HWY_NATIVE_REVERSE2_8
+#else
+#define HWY_NATIVE_REVERSE2_8
+#endif
+
 // Must not be called:
 template <class D, typename T = TFromD<D>>
 HWY_API Vec1<T> Reverse2(D /* tag */, const Vec1<T> v) {
